@@ -1,0 +1,234 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/serif.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+                    <h2>Криптография, <br>карго-культ <br>и крафтовая энтропия</h2>
+                    <p>Дмитрий Грошев</p>
+                    <p><a href="https://twitter.com/lambdadmitry/">@lambdadmitry</a></p>
+                </section>
+
+                <section>
+                    <img src="img/cargo-cult.jpg">
+                </section>
+
+				<section>
+                    <h3>О чём этот доклад</h3>
+                    <ul>
+                        <li>Непонимание механизмов порождает мифы</li>
+                        <li>«Для Настоящей Криптографии™ нужен Настоящий Рандом™»</li>
+                        <li>«/dev/urandom – не кошерно, нужна Физическая Энтропия™»</li>
+                        <li>Утверждения в кавычках – ерунда</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Не только твоя мама</h3>
+                    <img src="img/lwn1.png">
+                    <p><a href="https://lwn.net/Articles/261804/">https://lwn.net/Articles/261804/</a></p>
+                    <p>Разработчики ядра Linux также верят в это</p>
+                </section>
+
+                <section>
+                    <h3>Не только твоя мама 2</h3>
+                    <img src="img/lwn2.png">
+                    <p><a href="https://lwn.net/Articles/586427/">https://lwn.net/Articles/586427/</a></p>
+                    <p>Пресвятой Господь, это же ЯДРО, они точно что-то знают!</p>
+                </section>
+
+
+                <section>
+                    <h3>План</h3>
+                    <ul>
+                        <li>На каких китах стоит криптография</li>
+                        <li>AES-CTR</li>
+                        <li>[Тривиальный вывод]</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Шифр Цезаря, Enigma, …</h3>
+                    <p>…</p>
+                </section>
+
+                <section>
+                    <p>Шутка. К чертям это старьё</p>
+                </section>
+
+                <section>
+                    <h3>Пожалуй, главный кит</h3>
+                    <p>(начиная примерно с WW2)</p>
+                    <ul>
+                        <li>«Выглядит надёжно» => доказательства</li>
+                        <li>One-time pad</li>
+                        <li>"One-time pads are "information-theoretically secure" in that the encrypted message (i.e., the ciphertext) provides no information about the original message to a cryptanalyst (except the maximum possible length of the message)." – wiki</li>
+                    </ul>
+                    <small>
+                    <p>Заметки на полях:</p>
+                    <ul>
+                        <li>Существуют разные классы «доказанной безопасности» – IND-CCA, IND-CPA, semantically secure, information-theoretically secure, …</li>
+                        <li>Девелоперы Телеграма очень плохи, не будьте, как они!</li>
+                    </ul>
+                    </small>
+                </section>
+
+                <section>
+                    <h3>Проблемы с шифрблокнотом</h3>
+                    <ul>
+                        <li>Длинна «ключа» равна длинне сообщения</li>
+                        <li>Пичалька :(((</li>
+                        <li>Можем ли мы лучше?</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Криптографические примитивы</h3>
+                    <p>Разные уровни:</p>
+                    <ul>
+                        <li>RF/PRF/PRP/…</li>
+                        <li>AES/ChaCha/…</li>
+                        <li><i>Построение</i></li>
+                        <li>Библиотека/бинарник/…</li>
+                    </ul>
+                    <p>
+                        <small>RF = Random Function,<br> PRF = PseudoRandom Function,<br> PRP = PseudoRandom Permutation</small>
+                    </p>
+                </section>
+
+                <section>
+                    <h3>Hun… Oracle games</h3>
+                    <p>Строго говоря, PRF != RF, но полагаются неотличимыми</p>
+                    <pre>
+ -------        x        -------------
+|       |  <----------  |             |
+|  ???  |      f(x)     |  Adversary  |  =======> f = RF? f = PRF?
+|       |  ---------->  |             |
+ -------                 -------------
+                    </pre>
+                    <p>Подводный камень: PRP != PRF<br>(перестановка != функция,<br>суръекция != биекция)</p>
+                </section>
+
+                <section>
+                    <h3>AES</h3>
+                    <ul>
+                        <li>f[key](x<small>128bits</small>) => y<small>128bits</small>, f биективна</li>
+                        <li>Больше ничего знать не надо (почти)</li>
+                        <li>Не очень полезно</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Построение</h3>
+                    <ul>
+                        <li>Как превратить 128 бит в миллиард гигабайт?</li>
+                        <li>AES-CBC, AES-CTR, …</li>
+                        <li>Требуется доказательство!</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>AES-CTR</h3>
+                    <img src="img/CTR_encryption_2.svg.png">
+                    <ul>
+                        <li>Классный! Надёжный, параллельный, можно искать</li>
+                        <li>Подводный камень: уникальность nonce</li>
+                        <li>Практически one-time pad при условии неотличимости шифртекста от случайного текста</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>AES-CTR, ещё раз</h3>
+                    <ul>
+                        <li>Базируется на верности того, что:
+                            <ul>
+                                <li>AES это PRP</li>
+                                <li>PRP ~ PRF</li>
+                                <li>PRF ~ RF</li>
+                            </ul>
+                        </li>
+                        <li>Генератор истинных случайных чисел это RF</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>AES-CTR и /dev/urandom</h3>
+                    <ul>
+                        <li>/dev/urandom генерирует последовательность псевдослучайных бит из «настоящей энтропии»</li>
+                        <li>AES-CTR генерирует последовательность псевдослучайных бит из ключа и входа</li>
+                        <li>Найдите три отличия!</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>AES-CTR и /dev/urandom</h3>
+                    <ul>
+                        <li>Если AES[key](nonce|counter) отличим от истинно случайной последовательности, AES-CTR небезопасен</li>
+                        <li>128 бит «настоящей энтропии» и персистентного счётчика должно быть достаточно для каждого!</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Дима, но как же rekeying?</h3>
+                    <ul>
+                        <li>AES ~ PRP, PRP != PRF, это «становится заметно» после примерно 2<small>64</small> блоков</li>
+                        <li>2<small>64</small> блоков > 250 миллионов ТБ</li>
+                        <li>Сломанное доказательство != практическая атака</li>
+                        <li>Даже если вы столько шифруете, /dev/urandom «сменит ключ» гораздо, гораздо раньше</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h3>Резюме</h3>
+                    <ul>
+                        <li>Смело используйте /dev/urandom!</li>
+                        <li>Избегайте карго-безопасности</li>
+                        <li>Будьте няшами</li>
+                    </ul>
+                    <p>Спасибо за внимание!</p>
+                    <p><a href="https://twitter.com/lambdadmitry/">@lambdadmitry</a></p>
+                    <p><a href="https://github.io/si14/itgm-2016-07/">github.io/si14/itgm-2016-07</a></p>
+                </section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>
